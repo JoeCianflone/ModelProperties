@@ -1,130 +1,107 @@
 <?php
 
-namespace JoeCianflone\ModelProperties\Tests\Unit;
-
-use Illuminate\Support\Facades\Config;
-use JoeCianflone\ModelProperties\Exceptions\MassAssignmentVulnerabilityException;
 use JoeCianflone\ModelProperties\ModelProperties;
 
-it('has fillable properties', function (ModelProperties $modelProps) {
-    $fillable = $modelProps->getFillable();
+uses()->group('model-properties');
 
-    expect($fillable)->toBeArray();
-    expect($fillable)->toContain('name');
-    expect($fillable)->toContain('all_things');
-    expect($fillable)->not->toContain('foo');
-    expect($fillable)->not->toContain('password');
-})->with('ModelProps');
+// --- allCasts
+test('it returns correct allCasts', function ($input, $expected) {
+    $modelProps = new ModelProperties(
+        fillable: $input['fillable'],
+        guarded: $input['guarded']
+    );
 
-it('has guarded properties, no default assignment', function (ModelProperties $modelProps) {
-    Config::set('modelproperties.mass_assignment_protection', false);
-    Config::set('modelproperties.default_property_assignment', 'none');
+    expect($modelProps->allCasts)->toEqual($expected);
+})->with('allCasts');
 
-    $guarded = $modelProps->getGuarded();
+test('allCasts handles edge cases', function ($input, $expected) {
+    $modelProps = new ModelProperties(
+        fillable: $input['fillable'],
+        guarded: $input['guarded']
+    );
 
-    expect($guarded)->toBeArray();
-    expect($guarded)->toContain('foo');
-    expect($guarded)->toContain('address');
-    expect($guarded)->not->toContain('name');
-    expect($guarded)->not->toContain('password');
-})->with('ModelProps');
+    expect($modelProps->allCasts)->toEqual($expected);
+})->with('allCasts edge cases');
 
-it('has default value set', function (ModelProperties $modelProps) {
-    $defaults = $modelProps->getDefaultValues();
+// --- defaultPropertyValues
+test('it returns correct defaultPropertyValues', function ($input, $expected) {
+    $modelProps = new ModelProperties(
+        fillable: $input['fillable'],
+        guarded: $input['guarded']
+    );
 
-    expect($defaults)->toBeArray();
-    expect($defaults)->toHaveKey('active', true);
-})->with('ModelProps');
+    expect($modelProps->defaultPropertyValues)->toEqual($expected);
+})->with('defaultPropertyValues');
 
-it('does not cast strings as strings', function (ModelProperties $modelProps) {
-    Config::set('modelproperties.explicity_cast_strings', false);
-    $defaults = $modelProps->getCasts();
+test('defaultPropertyValues handles edge cases', function ($input, $expected) {
+    $modelProps = new ModelProperties(
+        fillable: $input['fillable'],
+        guarded: $input['guarded']
+    );
 
-    expect($defaults)->toBeArray();
-    expect($defaults)->toHaveLength(1);
-})->with('ModelProps');
+    expect($modelProps->defaultPropertyValues)->toEqual($expected);
+})->with('defaultPropertyValues edge cases');
 
-it('explicitly cast strings as strings', function (ModelProperties $modelProps) {
-    Config::set('modelproperties.explicity_cast_strings', true);
-    $defaults = $modelProps->getCasts();
+// --- fillableKeys
+test('it returns correct fillableKeys', function ($input, $expected) {
+    $modelProps = new ModelProperties(fillable: $input);
 
-    expect($defaults)->toBeArray();
-    expect($defaults)->toHaveLength(6);
-})->with('ModelProps');
+    expect($modelProps->fillableKeys)->toEqual($expected);
+})->with('fillableKeys');
 
-it('has explicitly hidden and visible properties', function (ModelProperties $modelProps) {
-    $hidden = $modelProps->getHidden();
-    $visible = $modelProps->getVisible();
+// --- guardedKeys
+test('it returns correct guardedKeys', function ($input, $expected) {
+    $modelProps = new ModelProperties(guarded: $input);
 
-    expect($hidden)->toContain('password', 'all_things');
-    expect($visible)->toContain('address');
-})->with('ModelProps');
+    expect($modelProps->guardedKeys)->toEqual($expected);
+})->with('guardedKeys');
 
-it('does not override primary key data', function (ModelProperties $modelProps) {
-    expect($modelProps->hasPrimaryKey())->toBe(false);
-})->with('ModelProps');
+// --- primaryKeyData
+test('it returns correct primaryKeyData', function ($input, $expected) {
+    $modelProps = new ModelProperties(
+        fillable: $input['fillable'],
+        primary: $input['primary'],
+    );
 
-it('sets a primary key uses default data', function (ModelProperties $modelProps) {
-    expect($modelProps->hasPrimaryKey())->toBe(true);
-    expect($modelProps->getPrimaryKeyName())->toBe('id');
-    expect($modelProps->getPrimaryKeyType())->toBe('int');
-    expect($modelProps->isPrimaryKeyIncrementing())->toBe(true);
-})->with('ModelPropsWithKey');
+    expect($modelProps->primaryKeyData)->toEqual($expected);
+})->with('primaryKeyData');
 
-it('sets a primary key with custom name', function (ModelProperties $modelProps) {
-    expect($modelProps->hasPrimaryKey())->toBe(true);
-    expect($modelProps->getPrimaryKeyName())->toBe('mypk');
-    expect($modelProps->getPrimaryKeyType())->toBe('int');
-    expect($modelProps->isPrimaryKeyIncrementing())->toBe(true);
-})->with('ModelPropsCustomPrimaryKey');
+test('primaryKeyData falls back to int if type not found', function () {
+    $modelProps = new ModelProperties(
+        fillable: ['name' => 'string'],
+        primary: ['uuid' => ['incrementing' => false]]
+    );
 
-it('sets a primary key with custom name and settings', function (ModelProperties $modelProps) {
-    expect($modelProps->hasPrimaryKey())->toBe(true);
-    expect($modelProps->getPrimaryKeyName())->toBe('mypk');
-    expect($modelProps->getPrimaryKeyType())->toBe('string');
-    expect($modelProps->isPrimaryKeyIncrementing())->toBe(false);
-})->with('ModelPropsCustomPrimaryKeyAsUUID');
+    expect($modelProps->primaryKeyData)->toEqual([
+        'key' => 'uuid',
+        'incrementing' => false,
+        'type' => 'int',
+    ]);
+});
 
-it('defaults to fillable and contains non-explicit properties', function (ModelProperties $modelProps) {
-    Config::set('modelproperties.default_property_assignment', 'fillable');
-    $fillable = $modelProps->getFillable();
+test('it throws exception if primary key is not set', function () {
+    $modelProps = new ModelProperties(
+        fillable: ['id' => 'uuid'],
+        primary: [],
+    );
 
-    expect($fillable)->toBeArray();
-    expect($fillable)->toContain('name');
-    expect($fillable)->toContain('all_things');
-    expect($fillable)->toContain('password');
-    expect($fillable)->not->toContain('foo');
-    expect($fillable)->toHaveLength(4);
+    $this->expectException(Exception::class);
+    $this->expectExceptionMessage('Primary Key not set');
 
-})->with('ModelProps');
+    $modelProps->primaryKeyData;
+});
 
-it('defaults to guarded and contains non-explicit properties', function (ModelProperties $modelProps) {
-    Config::set('modelproperties.default_property_assignment', 'guarded');
-    $guarded = $modelProps->getGuarded();
-    expect($guarded)->toBeArray();
-    expect($guarded)->toContain('*');
-    expect($guarded)->toHaveLength(1);
-})->with('ModelProps');
+// --- empty case
+test('it handles fully empty constructor input', function () {
+    $modelProps = new ModelProperties;
 
-it('has mass assignment protection, but no default properties set', function (ModelProperties $modelProps) {
-    Config::set('modelproperties.default_property_assignment', 'none');
-    $guarded = $modelProps->getGuarded();
-    $fillable = $modelProps->getFillable();
-
-    expect($guarded)->toBeArray();
-    expect($fillable)->toBeArray();
-    expect($guarded)->toContain('*');
-    expect($guarded)->toHaveLength(1);
-    expect($fillable)->toHaveLength(0);
-
-})->with('ModelPropsWithDefaults');
-
-it('throws a MassAssignmentVulnerabilityException', function () {
-    Config::set('modelproperties.mass_assignment_protection', false);
-
-    Config::set('modelproperties.default_property_assignment', 'none');
-    expect(fn () => new ModelProperties())->toThrow(MassAssignmentVulnerabilityException::class);
-
-    Config::set('modelproperties.default_property_assignment', 'fillable');
-    expect(fn () => new ModelProperties())->toThrow(MassAssignmentVulnerabilityException::class);
+    expect($modelProps->fillableKeys)->toEqual([]);
+    expect($modelProps->guardedKeys)->toEqual([]);
+    expect($modelProps->defaultPropertyValues)->toEqual([]);
+    expect($modelProps->allCasts)->toEqual([]);
+    expect($modelProps->primaryKeyData)->toEqual([
+        'key' => 'id',
+        'incrementing' => true,
+        'type' => 'int',
+    ]);
 });

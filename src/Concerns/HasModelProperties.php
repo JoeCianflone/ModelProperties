@@ -3,25 +3,35 @@
 namespace JoeCianflone\ModelProperties\Concerns;
 
 use Crell\AttributeUtils\Analyzer;
+use Illuminate\Support\Facades\Config;
 use JoeCianflone\ModelProperties\ModelProperties;
 
 trait HasModelProperties
 {
     public function initializeHasModelProperties(): void
     {
-        $properties = (new Analyzer())->analyze(__CLASS__, ModelProperties::class);
+        $properties = (new Analyzer)->analyze(__CLASS__, ModelProperties::class);
 
-        if ($properties->hasPrimaryKey()) {
-            $this->primaryKey = $properties->getPrimaryKeyName();
-            $this->keyType = $properties->getPrimaryKeyType();
-            $this->incrementing = $properties->isPrimaryKeyIncrementing();
-        }
+        $this->primaryKey = $properties->primaryKeyData['key'];
+        $this->keyType = $properties->primaryKeyData['type'];
+        $this->incrementing = $properties->primaryKeyData['incrementing'];
 
-        $this->fillable($properties->getFillable());
-        $this->guard($properties->getGuarded());
-        $this->setHidden($properties->getHidden());
-        $this->mergeCasts($properties->getCasts());
+        $guardByDefault = is_null($properties->guardByDefault)
+            ? Config::boolean('modelproperties.guard_by_default')
+            : $properties->guardByDefault;
 
-        $this->attributes = $properties->getDefaultValues();
+        $this->fillable($properties->fillableKeys);
+        $this->guard(
+            $guardByDefault
+                ? ['*']
+                : $properties->guardedKeys
+        );
+
+        $this->setHidden($properties->hidden);
+        $this->setVisible($properties->visible);
+
+        $this->mergeCasts($properties->allCasts);
+
+        $this->attributes = $properties->defaultPropertyValues;
     }
 }
