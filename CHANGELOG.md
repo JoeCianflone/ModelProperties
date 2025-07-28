@@ -2,6 +2,12 @@
 
 All notable changes to `ModelProperties` will be documented in this file.
 
+## v3.0.0 - 2025-07-28
+
+### Changes
+
+* Complete rewrite, now it's smaller, faster, and more intuitive
+
 ## v2.0.0 - 2025-02-26
 
 ### Changes
