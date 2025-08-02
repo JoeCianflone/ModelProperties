@@ -2,6 +2,7 @@
 
 namespace JoeCianflone\ModelProperties;
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
 #[\Attribute(\Attribute::TARGET_CLASS)]
@@ -54,15 +55,19 @@ final class ModelProperties
     /** @var array<string, mixed> */
     public array $primaryKeyData {
         get {
-            $k = collect($this->primary)->keys()->toArray();
-            if (count($k) <= 0) {
+            $key = Arr::except(collect($this->primary)->keys()->toArray(), ['incrementing']);
+
+            if (count($key) <= 0) {
                 throw new \Exception('Primary Key not set');
             }
 
+            $keyName = array_key_first($key);
+            $keyType = $key[$keyName];
+
             return [
-                'key' => $k[0],
-                'incrementing' => $this->primary[$k[0]]['incrementing'],
-                'type' => data_get($this->allProperties, $k[0], 'int'),
+                'key' => $keyName,
+                'incrementing' => data_get($this->primary, 'incrementing', true),
+                'type' => $keyType,
             ];
         }
     }
@@ -86,7 +91,7 @@ final class ModelProperties
         public array $guarded = [],
         public array $hidden = [],
         public array $visible = [],
-        public array $primary = ['id' => ['incrementing' => true]],
+        public array $primary = ['id' => 'int', 'incrementing' => true],
         public ?bool $guardByDefault = null,
     ) {}
 }
