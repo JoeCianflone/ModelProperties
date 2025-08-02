@@ -2,6 +2,12 @@
 
 All notable changes to `ModelProperties` will be documented in this file.
 
+## v3.1.0 - 2025-08-02
+
+### Changes
+
+Update's how the primary key is figured out.
+
 ## v3.0.0 - 2025-07-28
 
 ### Changes
