@@ -30,7 +30,8 @@ final class ModelProperties
                 ->flatMap(function ($v, $k) {
                     if (is_array($v)) {
                         $vkey = array_keys($v);
-                        return [ $k => $v[$vkey[0]]];
+
+                        return [$k => $v[$vkey[0]]];
                     }
                 })->toArray();
 
