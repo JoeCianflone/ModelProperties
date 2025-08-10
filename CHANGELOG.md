@@ -2,6 +2,14 @@
 
 All notable changes to `ModelProperties` will be documented in this file.
 
+## v3.1.1 - 2025-08-10
+
+### What's Changed
+
+* chore(deps): bump shivammathur/setup-php from 2.35.1 to 2.35.2 by @dependabot[bot] in https://github.com/JoeCianflone/ModelProperties/pull/35
+
+**Full Changelog**: https://github.com/JoeCianflone/ModelProperties/compare/v3.1.0...v3.1.1
+
 ## v3.1.0 - 2025-08-02
 
 ### Changes
