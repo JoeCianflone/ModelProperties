@@ -2,7 +2,6 @@
 
 namespace JoeCianflone\ModelProperties;
 
-use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
 #[\Attribute(\Attribute::TARGET_CLASS)]
@@ -13,12 +12,10 @@ final class ModelProperties
         get {
             return $this->allProperties->flatMap(function ($value, $key) {
                 if (is_string($value)) {
-
                     return $value === 'string'
                         ? []
                         : [$key => $value];
                 }
-
                 if (is_array($value) && $value) {
                     return [$key => key($value)];
                 }
@@ -30,11 +27,13 @@ final class ModelProperties
     public array $defaultPropertyValues {
         get {
             return collect($this->allProperties)
-                ->flatMap(
-                    fn ($v, $k) => is_array($v)
-                    ? $v
-                    : []
-                )->toArray();
+                ->flatMap(function ($v, $k) {
+                    if (is_array($v)) {
+                        $vkey = array_keys($v);
+                        return [ $k => $v[$vkey[0]]];
+                    }
+                })->toArray();
+
         }
     }
 
@@ -55,19 +54,18 @@ final class ModelProperties
     /** @var array<string, mixed> */
     public array $primaryKeyData {
         get {
-            $key = Arr::except(collect($this->primary)->keys()->toArray(), ['incrementing']);
+            $key = collect($this->primary)->reject(function ($v, $k) {
+                return $k === 'incrementing';
+            })->keys()->toArray();
 
             if (count($key) <= 0) {
                 throw new \Exception('Primary Key not set');
             }
 
-            $keyName = array_key_first($key);
-            $keyType = $key[$keyName];
-
             return [
-                'key' => $keyName,
+                'key' => $key[0],
                 'incrementing' => data_get($this->primary, 'incrementing', true),
-                'type' => $keyType,
+                'type' => data_get($this->primary, $key[0], 'int'),
             ];
         }
     }
